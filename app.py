@@ -30,7 +30,7 @@ with col_title:
     st.caption("Ultimate Specialty Coffee Station")
 
 st.write(
-    "AI Label Herkenning • Visuele Zetmethode Picker • Geschiktheid & Advies • "
+    "AI Label Herkenning • Visuele Zetmethode Picker • Top 3 Advies & Geschiktheid • "
     "Spa/Bar-le-Duc Water Blend • Live Voice Timer • Doorlooptijd Auto-Tuner • Molen Tracker"
 )
 st.markdown("---")
@@ -62,32 +62,6 @@ def save_data(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-
-def extract_icons(image_path="assets/coffee_methods.png"):
-    """Snijdt het 3x3 grid automatisch op in losse iconen."""
-    if not os.path.exists(image_path):
-        return
-
-    os.makedirs("assets/icons", exist_ok=True)
-    img = Image.open(image_path)
-    w, h = img.size
-    cw, ch = w / 3, h / 3
-
-    crops = {
-        "v60.png": (0, ch, cw, ch * 2),          # Midden-links (V60 / Pour-over)
-        "french_press.png": (cw, 0, cw * 2, ch), # Boven-midden (French Press)
-        "chemex.png": (cw, ch * 2, cw * 2, h),   # Onder-midden (Chemex)
-        "aeropress.png": (cw * 2, ch * 2, w, h), # Rechtsonder (AeroPress)
-    }
-
-    for filename, box in crops.items():
-        out_path = os.path.join("assets/icons", filename)
-        if not os.path.exists(out_path):
-            img.crop(box).save(out_path)
-
-
-# Voer de uitsnijding direct uit bij het opstarten
-extract_icons("assets/coffee_methods.png")
 
 brew_history = load_data(LOG_FILE, [])
 maint_data = load_data(
@@ -143,24 +117,25 @@ if api_key:
             ],
         )
 
-        # 3.3 Visuele Zetmethode Picker (Automatisch uitgesneden iconen)
+        # 3.3 Visuele Zetmethode Picker
         st.markdown("### ☕ Kies je Zetmethode")
 
-        IMG_V60 = "assets/icons/v60.png"
-        IMG_FRENCH = "assets/icons/french_press.png"
-        IMG_CHEMEX = "assets/icons/chemex.png"
-        IMG_AEROPRESS = "assets/icons/aeropress.png"
+        IMG_V60 = "https://img.icons8.com/isometric-line/400/v60-coffee-maker.png"
+        IMG_AEROPRESS = "https://img.icons8.com/isometric-line/400/french-press.png"
+        IMG_CHEMEX = "https://img.icons8.com/isometric-line/400/chemex.png"
+        IMG_SHIZUKU = "https://img.icons8.com/isometric-line/400/cold-brew.png"
+        IMG_CLEVER = "https://img.icons8.com/isometric-line/400/pour-over.png"
+        IMG_SYPHON = "https://img.icons8.com/isometric-line/400/glass.png"
 
         if "zetmethode" not in st.session_state:
             st.session_state["zetmethode"] = "V60"
 
-        col_v60, col_aero, col_chem, col_french = st.columns(4)
+        col_v60, col_aero, col_chem, col_shiz, col_clever, col_syphon = st.columns(6)
 
         with col_v60:
-            if os.path.exists(IMG_V60):
-                st.image(IMG_V60, caption="Hario V60", use_container_width=True)
+            st.image(IMG_V60, caption="Hario V60", use_container_width=True)
             if st.button(
-                "Kies V60",
+                "V60",
                 type="primary" if st.session_state["zetmethode"] == "V60" else "secondary",
                 use_container_width=True,
             ):
@@ -168,10 +143,9 @@ if api_key:
                 st.rerun()
 
         with col_aero:
-            if os.path.exists(IMG_AEROPRESS):
-                st.image(IMG_AEROPRESS, caption="AeroPress", use_container_width=True)
+            st.image(IMG_AEROPRESS, caption="AeroPress", use_container_width=True)
             if st.button(
-                "Kies AeroPress",
+                "AeroPress",
                 type="primary" if st.session_state["zetmethode"] == "AeroPress" else "secondary",
                 use_container_width=True,
             ):
@@ -179,25 +153,43 @@ if api_key:
                 st.rerun()
 
         with col_chem:
-            if os.path.exists(IMG_CHEMEX):
-                st.image(IMG_CHEMEX, caption="Chemex", use_container_width=True)
+            st.image(IMG_CHEMEX, caption="Chemex", use_container_width=True)
             if st.button(
-                "Kies Chemex",
+                "Chemex",
                 type="primary" if st.session_state["zetmethode"] == "Chemex" else "secondary",
                 use_container_width=True,
             ):
                 st.session_state["zetmethode"] = "Chemex"
                 st.rerun()
 
-        with col_french:
-            if os.path.exists(IMG_FRENCH):
-                st.image(IMG_FRENCH, caption="French Press", use_container_width=True)
+        with col_shiz:
+            st.image(IMG_SHIZUKU, caption="Hario Shizuku", use_container_width=True)
             if st.button(
-                "Kies French Press",
-                type="primary" if st.session_state["zetmethode"] == "French Press" else "secondary",
+                "Shizuku",
+                type="primary" if st.session_state["zetmethode"] == "Hario Shizuku (Slow Drip)" else "secondary",
                 use_container_width=True,
             ):
-                st.session_state["zetmethode"] = "French Press"
+                st.session_state["zetmethode"] = "Hario Shizuku (Slow Drip)"
+                st.rerun()
+
+        with col_clever:
+            st.image(IMG_CLEVER, caption="Clever Dripper", use_container_width=True)
+            if st.button(
+                "Clever",
+                type="primary" if st.session_state["zetmethode"] == "Clever Dripper" else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["zetmethode"] = "Clever Dripper"
+                st.rerun()
+
+        with col_syphon:
+            st.image(IMG_SYPHON, caption="Syfon / Vacuum", use_container_width=True)
+            if st.button(
+                "Syfon",
+                type="primary" if st.session_state["zetmethode"] == "Syfon (Vacuum Pot)" else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["zetmethode"] = "Syfon (Vacuum Pot)"
                 st.rerun()
 
         zetmethode = st.session_state["zetmethode"]
@@ -206,12 +198,28 @@ if api_key:
         if zetmethode == "AeroPress":
             filter_keuze = "AeroPress (AI kiest papier, metaal of dubbel)"
             st.info("💡 **AeroPress Modus:** De AI kiest de optimale filtercombinatie.")
-        elif zetmethode == "French Press":
-            filter_keuze = "Ingebouwd RVS Filter"
-            st.info("☕ **French Press Modus:** Volle body immersie-extractie.")
-        elif zetmethode == "Chemex":
-            filter_keuze = "Chemex Dik Filterpapier"
-            st.info("☕ **Chemex Modus:** Zeer heldere kop koffie met dikke filters.")
+        elif zetmethode == "Hario Shizuku (Slow Drip)":
+            filter_keuze = "Hario Shizuku Ingebouwd RVS Dripper Filter"
+            st.info("💧 **Hario Shizuku Modus:** Slow drip koudwater extractie.")
+        elif zetmethode == "Clever Dripper":
+            filter_keuze = st.selectbox(
+                "Welk filterpapier gebruik je?",
+                [
+                    "Moccamaster Nr. 4 Papier",
+                    "Filtropa Nr. 4 Papier",
+                ],
+            )
+            st.info("☕ **Clever Dripper Modus:** Immersie gecombineerd met drip-extractie.")
+        elif zetmethode == "Syfon (Vacuum Pot)":
+            filter_keuze = st.selectbox(
+                "Welk filter gebruik je?",
+                [
+                    "Katoenen Stoffen Filter (Klassiek / Rijke body)",
+                    "Papieren Filter voor Syfon (Schone cup)",
+                    "Metal Mesh Filter (Maximale oliën)",
+                ],
+            )
+            st.info("🧪 **Syfon Modus:** Vacuüm immersie zetmethode met volledige temperatuurbeheersing.")
         else:
             filter_keuze = st.selectbox(
                 "Welk filterpapier gebruik je?",
@@ -225,12 +233,12 @@ if api_key:
 
         # 3.5 Iced Brew & Water Volume Logica
         iced_brew = False
-        if zetmethode != "French Press":
+        if zetmethode not in ["Hario Shizuku (Slow Drip)", "Syfon (Vacuum Pot)"]:
             iced_brew = st.checkbox("🧊 Maak als Iced Flash Brew")
 
-        if zetmethode in ["Chemex", "French Press"]:
+        if zetmethode in ["Chemex", "Hario Shizuku (Slow Drip)", "Clever Dripper", "Syfon (Vacuum Pot)"]:
             water_opties = [300, 500, 600, 750]
-            standaard_water = 500 if zetmethode == "French Press" else 300
+            standaard_water = 300
         else:
             water_opties = [160, 300, 500]
             standaard_water = 160
@@ -252,12 +260,13 @@ if api_key:
                 Totaal beoogde vloeistof: {totaal_water}g.
                 Iced Brew ingeschakeld: {iced_brew}.
                 Gekozen molen(s): {molen_keuze}.
-                Gekozen filterpapier: {filter_keuze}.
+                Gekozen filter: {filter_keuze}.
                 Leeftijd van de bonen: {dagen_oud} dagen.
 
+                Bepaal ook op basis van de verwerkingsmethode (washed/natural/honey/anaerobic), herkomst en brandgraad de TOP 3 meest geadviseerde zetmethodes uit de lijst: [V60, AeroPress, Chemex, Hario Shizuku, Clever Dripper, Syfon].
+
                 Waterrecept instructie:
-                Bereken op basis van de bonen (herkomst, verwerkingsmethode en verwachte zuren/mineralen) de ideale water-mix van Spa Reine (zeer zacht, 30 PPM) en Bar-le-Duc (rijker aan bicarbonaat/calcium, ~200 PPM) voor exact {totaal_water}g water.
-                Lichte, heel fruitige/florale koffie heeft meer Spa Reine nodig (bijv. 70-80%). Vollere, gewassen of donkerder gebrande koffie verdraagt meer Bar-le-Duc (bijv. 40-50%).
+                Bereken op basis van de bonen de ideale water-mix van Spa Reine (zeer zacht, 30 PPM) en Bar-le-Duc (rijker aan bicarbonaat/calcium, ~200 PPM) voor exact {totaal_water}g water.
 
                 Geef EEN ENKEL JSON-object terug ingesloten in ```json ``` met exact de volgende structuur:
                 ```json
@@ -265,9 +274,12 @@ if api_key:
                   "roaster": "Naam Branderij",
                   "coffee_name": "Naam Koffie / Herkomst",
                   "is_geschikt_voor_gekozen_methode": true,
-                  "geschiktheids_toelichting": "Lichte toelichting waarom wel of niet geschikt.",
-                  "meest_geschikte_zetmethode": "V60",
-                  "reden_meest_geschikt": "Lichte toelichting waarom deze methode het beste smaakprofiel haalt.",
+                  "geschiktheids_toelichting": "Lichte toelichting waarom wel of niet geschikt voor {zetmethode}.",
+                  "top_3_zetmethodes": [
+                    {{"rang": 1, "methode": "V60", "reden": "Laat de fruitige zuren en complexe florale tonen perfect tot hun recht komen."}},
+                    {{"rang": 2, "methode": "Chemex", "reden": "Zorgt voor een extreem schone cup waarin lichte accenten mooi naar voren komen."}},
+                    {{"rang": 3, "methode": "AeroPress", "reden": "Geeft net iets meer body bij behoud van de fruitige aroma's."}}
+                  ],
                   "water_blend": {{
                     "spa_reine_g": 210,
                     "bar_le_duc_g": 90,
@@ -283,7 +295,6 @@ if api_key:
                 """
 
                 try:
-                    # Interactions API aanroep met gemini-2.5-flash
                     response = client.interactions.create(
                         model="gemini-2.5-flash",
                         contents=[prompt, image]
@@ -320,18 +331,26 @@ if "recipe_raw" in st.session_state:
             roaster = recipe_data.get("roaster", "Onbekend")
             coffee_name = recipe_data.get("coffee_name", "Onbekend")
 
+            # 4.0 Top 3 Geadviseerde Zetmethodes
+            top_3 = recipe_data.get("top_3_zetmethodes", [])
+            if top_3:
+                st.subheader("🏆 Top 3 AI Geadviseerde Zetmethodes voor deze Boon")
+                cols = st.columns(3)
+                medailles = ["🥇 #1", "🥈 #2", "🥉 #3"]
+                for idx, item in enumerate(top_3[:3]):
+                    with cols[idx]:
+                        st.markdown(f"#### {medailles[idx]} **{item.get('methode', '')}**")
+                        st.caption(item.get("reden", ""))
+                st.markdown("---")
+
             # Geschiktheids-analyse
             st.subheader("💡 Barista AI Geschiktheids-Analyse")
             is_geschikt = recipe_data.get("is_geschikt_voor_gekozen_methode", True)
-            meest_geschikt = recipe_data.get("meest_geschikte_zetmethode", "V60")
 
             if is_geschikt:
                 st.success(f"✅ **Geschikt voor {st.session_state.get('zetmethode', 'deze methode')}!** {recipe_data.get('geschiktheids_toelichting', '')}")
             else:
-                st.warning(f"⚠️ **Let op:** {recipe_data.get('geschiktheids_toelichting', '')}")
-
-            if meest_geschikt.lower() != st.session_state.get('zetmethode', '').lower():
-                st.info(f"🌟 **Meest optimale zetmethode voor deze boon:** **{meest_geschikt}**\n\n_{recipe_data.get('reden_meest_geschikt', '')}_")
+                st.warning(f"⚠️ **Let op voor {st.session_state.get('zetmethode', 'deze methode')}:** {recipe_data.get('geschiktheids_toelichting', '')}")
 
             st.markdown("---")
 
