@@ -130,6 +130,8 @@ if "brew_ratio" not in st.session_state:
     st.session_state.brew_ratio = 16.6
 if "brewing" not in st.session_state:
     st.session_state.brewing = False
+if "show_camera" not in st.session_state:
+    st.session_state.show_camera = False
 
 # ==========================================
 # 4. SPLASH SCREEN (4 SECONDEN)
@@ -191,7 +193,7 @@ GRINDERS = {
 }
 
 # ==========================================
-# 6. RECEPTEN DATABASE (MET SVG AFBEELDINGEN)
+# 6. RECEPTEN DATABASE (UITGEBREID MET ALLE METHODES)
 # ==========================================
 RECIPES = {
     "V60 Single Cup (Lichte Branding)": {
@@ -215,6 +217,84 @@ RECIPES = {
             {"time_start": 45, "duration": 30, "target_water": 150, "title": "Eerste Hoofd-Pour", "action": "Schenk spiraalvormig bij tot 150g"},
             {"time_start": 75, "duration": 30, "target_water": 250, "title": "Tweede Hoofd-Pour", "action": "Schenk in het midden tot 250g"},
             {"time_start": 105, "duration": 60, "target_water": 250, "title": "Drawdown & Finish", "action": "Laat volledig doordruppelen"}
+        ]
+    },
+    "Chemex Classic (Balans & Helderheid)": {
+        "method": "Chemex",
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M25 15 L75 15 L60 45 C55 52 55 58 60 65 L75 85 L25 85 L40 65 C45 58 45 52 40 45 Z" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <path d="M38 50 L62 50" stroke="#2B1E1A" stroke-width="2" stroke-linecap="round"/>
+                <path d="M45 42 C50 40 50 48 55 45" stroke="#C06C4C" stroke-width="2" fill="none"/>
+            </svg>
+        """,
+        "coffee_g": 30.0,
+        "water_g": 500,
+        "temp_c": 94,
+        "target_total_time": 240,
+        "steps": [
+            {"time_start": 0, "duration": 45, "target_water": 100, "title": "Bloom", "action": "Schenk 100g water gelijkmatig op"},
+            {"time_start": 45, "duration": 45, "target_water": 250, "title": "Eerste Gietbeurt", "action": "Schenk rustig door tot 250g"},
+            {"time_start": 90, "duration": 60, "target_water": 400, "title": "Tweede Gietbeurt", "action": "Schenk door tot 400g"},
+            {"time_start": 150, "duration": 90, "target_water": 500, "title": "Laatste Gietbeurt & Finish", "action": "Schenk tot 500g en laat doorlooptijd voltooien"}
+        ]
+    },
+    "Aeropress (Volle Body)": {
+        "method": "Aeropress",
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="35" y="20" width="30" height="50" rx="3" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <rect x="32" y="65" width="36" height="12" rx="2" stroke="#2B1E1A" stroke-width="2.5" fill="#FFFFFF"/>
+                <line x1="40" y1="35" x2="60" y2="35" stroke="#2B1E1A" stroke-width="1.5"/>
+                <line x1="40" y1="45" x2="60" y2="45" stroke="#2B1E1A" stroke-width="1.5"/>
+                <line x1="40" y1="55" x2="60" y2="55" stroke="#2B1E1A" stroke-width="1.5"/>
+            </svg>
+        """,
+        "coffee_g": 18.0,
+        "water_g": 200,
+        "temp_c": 88,
+        "target_total_time": 120,
+        "steps": [
+            {"time_start": 0, "duration": 30, "target_water": 200, "title": "Inverted Giet", "action": "Giet al het water op de koffie en roer 5x"},
+            {"time_start": 30, "duration": 60, "target_water": 200, "title": "Wachten & Drukken", "action": "Draai de filterdop erop, draai om op kop en druk rustig door"}
+        ]
+    },
+    "French Press (Immersion)": {
+        "method": "French Press",
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="32" y="25" width="36" height="55" rx="3" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <line x1="50" y1="10" x2="50" y2="40" stroke="#2B1E1A" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M40 10 L60 10" stroke="#2B1E1A" stroke-width="2.5" stroke-linecap="round"/>
+                <rect x="42" y="35" width="16" height="4" fill="#2B1E1A"/>
+            </svg>
+        """,
+        "coffee_g": 30.0,
+        "water_g": 500,
+        "temp_c": 95,
+        "target_total_time": 240,
+        "steps": [
+            {"time_start": 0, "duration": 60, "target_water": 500, "title": "Volledige Gietbeurt", "action": "Giet al het water op de koffie, roer goed door en zet de plunger erop"},
+            {"time_start": 60, "duration": 180, "target_water": 500, "title": "Trektijd", "action": "Laat 3 minuten rustig trekken zonder storen"},
+            {"time_start": 240, "duration": 0, "target_water": 500, "title": "Plunger naar beneden", "action": "Duw de plunger langzaam en gelijkmatig naar beneden"}
+        ]
+    },
+    "Moka Pot (Stovetop Espresso)": {
+        "method": "Moka Pot",
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M38 20 L62 20 L68 45 L32 45 Z" stroke="#C06C4C" stroke-width="2.5" fill="#FFF8F5"/>
+                <path d="M35 50 L65 50 L70 80 L30 80 Z" stroke="#C06C4C" stroke-width="2.5" fill="#FFF8F5"/>
+                <rect x="47" y="12" width="6" height="8" fill="#2B1E1A"/>
+                <path d="M68 55 L78 60" stroke="#2B1E1A" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+        """,
+        "coffee_g": 20.0,
+        "water_g": 150,
+        "temp_c": 98,
+        "target_total_time": 300,
+        "steps": [
+            {"time_start": 0, "duration": 300, "target_water": 150, "title": "Verwarmen op laag vuur", "action": "Zet op laag tot middelhoog vuur met open klep tot de koffie begint te stromen, sluit dan de klep"}
         ]
     }
 }
@@ -253,20 +333,34 @@ if st.session_state.page == "home":
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📸 Scan je boon")
-    uploaded_file = st.camera_input("Maak een foto van het etiket")
-    if uploaded_file:
-        st.info("AI-Vision scant etiket... Recept herkend: V60 Light Roast!")
+    
+    # Knop om de camera-functionaliteit in/uit te schakelen
+    if not st.session_state.show_camera:
+        if st.button("📷 Open Camera om Bonen te Scannen"):
+            st.session_state.show_camera = True
+            st.rerun()
+    else:
+        if st.button("❌ Sluit Camera"):
+            st.session_state.show_camera = False
+            st.rerun()
+            
+        uploaded_file = st.camera_input("Maak een foto van het etiket")
+        if uploaded_file:
+            st.info("AI-Vision scant etiket... Aanbevolen zetmethodes geladen!")
 
     st.divider()
 
-    st.subheader("☕ Kies je zetmethode & Dosering")
+    st.subheader("☕ Meest Geschikte Zetmethodes & Dosering")
     coffee_amount = st.slider("Hoeveelheid koffie (gram):", 10, 30, 15)
     water_amount = int(coffee_amount * st.session_state.brew_ratio)
     st.write(f"**Totaal water nodig:** {water_amount} gram *(Ratio 1:16.6)*")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    for recipe_name, recipe_data in RECIPES.items():
+    # Toon de top 3 aanbevolen methodes
+    top_3_keys = list(RECIPES.keys())[:3]
+    for recipe_name in top_3_keys:
+        recipe_data = RECIPES[recipe_name]
         col_img, col_btn = st.columns([1, 2], vertical_alignment="center")
         with col_img:
             st.markdown(f"<div style='text-align: center;'>{recipe_data['svg_icon']}</div>", unsafe_allow_html=True)
@@ -274,10 +368,31 @@ if st.session_state.page == "home":
             if st.button(f"Zet {recipe_name}", key=f"btn_{recipe_name}"):
                 st.session_state.selected_recipe = recipe_name
                 st.session_state.coffee_amount = coffee_amount
-                st.session_state.water_amount = water_amount
+                st.session_state.water_amount = int(coffee_amount * (recipe_data["water_g"] / recipe_data["coffee_g"]))
                 st.session_state.page = "brew_screen"
                 st.rerun()
         st.markdown("<hr style='margin: 15px 0; border-color: #EAE1D9;'>", unsafe_allow_html=True)
+
+    # Sectie voor andere zetmethodes buiten de top 3
+    other_keys = list(RECIPES.keys())[3:]
+    if other_keys:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader("📂 Andere Zetmethodes")
+        st.write("Kies hier een alternatieve zetmethode:")
+        
+        for recipe_name in other_keys:
+            recipe_data = RECIPES[recipe_name]
+            col_img, col_btn = st.columns([1, 2], vertical_alignment="center")
+            with col_img:
+                st.markdown(f"<div style='text-align: center;'>{recipe_data['svg_icon']}</div>", unsafe_allow_html=True)
+            with col_btn:
+                if st.button(f"Zet {recipe_name}", key=f"btn_other_{recipe_name}"):
+                    st.session_state.selected_recipe = recipe_name
+                    st.session_state.coffee_amount = coffee_amount
+                    st.session_state.water_amount = int(coffee_amount * (recipe_data["water_g"] / recipe_data["coffee_g"]))
+                    st.session_state.page = "brew_screen"
+                    st.rerun()
+            st.markdown("<hr style='margin: 15px 0; border-color: #EAE1D9;'>", unsafe_allow_html=True)
 
 # ==========================================
 # 8. BROUW- EN EVALUATIESCHERM MET SLIMME FEEDBACK
@@ -298,7 +413,8 @@ elif st.session_state.page == "brew_screen":
 
     with tab_timer:
         for step in recipe["steps"]:
-            with st.expander(f"**{step['title']}** (Tot {int(step['target_water'] * (st.session_state.coffee_amount/15))}g)", expanded=True):
+            scaled_target = int(step['target_water'] * (st.session_state.coffee_amount / recipe['coffee_g']))
+            with st.expander(f"**{step['title']}** (Tot {scaled_target}g)", expanded=True):
                 st.write(f"👉 {step['action']}")
 
         col_start, col_stop = st.columns(2)
