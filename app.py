@@ -295,7 +295,8 @@ if api_key:
                 """
 
                 try:
-                    response = client.interactions.create(
+                    # Officiële Gemini API call met generate_content & contents parameter
+                    response = client.models.generate_content(
                         model="gemini-2.5-flash",
                         contents=[prompt, image]
                     )
