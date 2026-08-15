@@ -16,7 +16,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# Header met Logo en Titel
 col_logo, col_title = st.columns([1, 4])
 
 with col_logo:
@@ -35,7 +34,6 @@ st.write(
 )
 st.markdown("---")
 
-# API Key ophalen
 api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 if not api_key:
@@ -85,7 +83,6 @@ if api_key:
         st.markdown("---")
         st.subheader("⚙️ Instellingen voor je Zetbeurt")
 
-        # 3.1 Branddatum & Versheid Status
         branddatum = st.date_input(
             "Selecteer de branddatum van de koffie:", value=date.today()
         )
@@ -107,7 +104,6 @@ if api_key:
                 f"⏳ **Status:** Ouder dan 6 weken ({dagen_oud} dagen oud). Fine-tune maalgraad/temp."
             )
 
-        # 3.2 Molen Keuze
         molen_keuze = st.selectbox(
             "Welke koffiemolen gebruik je?",
             [
@@ -117,7 +113,6 @@ if api_key:
             ],
         )
 
-        # 3.3 Visuele Zetmethode Picker
         st.markdown("### ☕ Kies je Zetmethode")
 
         IMG_V60 = "https://img.icons8.com/isometric-line/400/v60-coffee-maker.png"
@@ -194,7 +189,6 @@ if api_key:
 
         zetmethode = st.session_state["zetmethode"]
 
-        # 3.4 Dynamische Filterkeuze per methode
         if zetmethode == "AeroPress":
             filter_keuze = "AeroPress (AI kiest papier, metaal of dubbel)"
             st.info("💡 **AeroPress Modus:** De AI kiest de optimale filtercombinatie.")
@@ -231,7 +225,6 @@ if api_key:
                 ],
             )
 
-        # 3.5 Iced Brew & Water Volume Logica
         iced_brew = False
         if zetmethode not in ["Hario Shizuku (Slow Drip)", "Syfon (Vacuum Pot)"]:
             iced_brew = st.checkbox("🧊 Maak als Iced Flash Brew")
@@ -251,7 +244,6 @@ if api_key:
 
         st.info("💧 **Water Receptuur:** Er wordt gewerkt met een mengsel van **Spa Reine** (zacht/lage mineralen) en **Bar-le-Duc** (hogere mineralisatie) op basis van de geanalyseerde bonen.")
 
-        # 3.6 Recept Generatie Knop
         if st.button("🚀 Genereer Recept & AI Advies", type="primary"):
             with st.spinner("Koffiezakje analyseren & recept berekenen..."):
                 prompt = f"""
@@ -295,16 +287,14 @@ if api_key:
                 """
 
                 try:
-                    # Officiële Gemini API call met generate_content & contents parameter
-                    response = client.models.generate_content(
+                    response = client.interactions.create(
                         model="gemini-2.5-flash",
-                        contents=[prompt, image]
+                        input=[prompt, image]
                     )
 
                     st.session_state["recipe_raw"] = response.text
                     st.session_state["timer_active"] = False
 
-                    # Molen Teller Update
                     if "Fellow Ode" in molen_keuze or "beiden" in molen_keuze:
                         maint_data["ode_brew_count"] += 1
                     if "Comandante" in molen_keuze or "beiden" in molen_keuze:
@@ -332,7 +322,6 @@ if "recipe_raw" in st.session_state:
             roaster = recipe_data.get("roaster", "Onbekend")
             coffee_name = recipe_data.get("coffee_name", "Onbekend")
 
-            # 4.0 Top 3 Geadviseerde Zetmethodes
             top_3 = recipe_data.get("top_3_zetmethodes", [])
             if top_3:
                 st.subheader("🏆 Top 3 AI Geadviseerde Zetmethodes voor deze Boon")
@@ -344,7 +333,6 @@ if "recipe_raw" in st.session_state:
                         st.caption(item.get("reden", ""))
                 st.markdown("---")
 
-            # Geschiktheids-analyse
             st.subheader("💡 Barista AI Geschiktheids-Analyse")
             is_geschikt = recipe_data.get("is_geschikt_voor_gekozen_methode", True)
 
@@ -355,7 +343,6 @@ if "recipe_raw" in st.session_state:
 
             st.markdown("---")
 
-            # Water Blend Weergave
             water_blend = recipe_data.get("water_blend", {})
             if water_blend:
                 st.subheader("💧 Exacte Water Blend (Spa Reine & Bar-le-Duc)")
@@ -369,7 +356,6 @@ if "recipe_raw" in st.session_state:
 
             st.markdown(recipe_data.get("markdown_recept", "Geen recept details beschikbaar."))
 
-            # 4.1 Real-Time Live Voice Timer
             st.markdown("---")
             st.subheader("⏱️ Real-Time Timer met Live Gesproken Begeleiding")
             stappen = recipe_data.get("stappen", [])
@@ -401,7 +387,6 @@ if "recipe_raw" in st.session_state:
                                 huidige_stap_idx = idx
                                 break
 
-                        # Spraak via Browser SpeechSynthesis API
                         if huidige_stap_idx != laatste_gesproken_stap:
                             tekst = f"{huidige_stap['titel']}. {huidige_stap['actie']}"
                             tts_html = f"""
@@ -432,7 +417,6 @@ if "recipe_raw" in st.session_state:
                         st.success("🎉 Zetsessie voltooid! Geniet van je koffie.")
                         st.session_state["timer_active"] = False
 
-                # 4.2 Doorlooptijd & Auto-Tuner
                 st.markdown("---")
                 st.subheader("⏱️ Doorlooptijd & Auto-Tuner")
                 doel_min = totaal_tijd // 60
