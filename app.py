@@ -31,7 +31,7 @@ with col_title:
 
 st.write(
     "AI Label Herkenning • Visuele Zetmethode Picker • Geschiktheid & Advies • "
-    "Water Blend & Iced Brew • Live Voice Timer • Doorlooptijd Auto-Tuner • Molen Tracker"
+    "Spa/Bar-le-Duc Water Blend • Live Voice Timer • Doorlooptijd Auto-Tuner • Molen Tracker"
 )
 st.markdown("---")
 
@@ -228,13 +228,7 @@ if api_key:
             value=standaard_water,
         )
 
-        # Water Blend Advies
-        st.markdown("#### 🧪 Water Receptuur Advies")
-        water_type = st.radio(
-            "Welk water gebruik je?",
-            ["Kraanwater", "Lotus Water / Spa Reine / Bar-le-Duc", "RO Water + Remineralisatie"],
-            horizontal=True
-        )
+        st.info("💧 **Water Receptuur:** Er wordt gewerkt met een mengsel van **Spa Reine** (zacht/lage mineralen) en **Bar-le-Duc** (hogere mineralisatie) op basis van de geanalyseerde bonen.")
 
         # 3.6 Recept Generatie Knop
         if st.button("🚀 Genereer Recept & AI Advies", type="primary"):
@@ -247,7 +241,10 @@ if api_key:
                 Gekozen molen(s): {molen_keuze}.
                 Gekozen filterpapier: {filter_keuze}.
                 Leeftijd van de bonen: {dagen_oud} dagen.
-                Gebruikt water: {water_type}.
+
+                Waterrecept instructie:
+                Bereken op basis van de bonen (herkomst, verwerkingsmethode en verwachte zuren/mineralen) de ideale water-mix van Spa Reine (zeer zacht, 30 PPM) en Bar-le-Duc (rijker aan bicarbonaat/calcium, ~200 PPM) voor exact {totaal_water}g water.
+                Lichte, heel fruitige/florale koffie heeft meer Spa Reine nodig (bijv. 70-80%). Vollere, gewassen of donkerder gebrande koffie verdraagt meer Bar-le-Duc (bijv. 40-50%).
 
                 Geef EEN ENKEL JSON-object terug ingesloten in ```json ``` met exact de volgende structuur:
                 ```json
@@ -258,7 +255,12 @@ if api_key:
                   "geschiktheids_toelichting": "Lichte toelichting waarom wel of niet geschikt.",
                   "meest_geschikte_zetmethode": "V60",
                   "reden_meest_geschikt": "Lichte toelichting waarom deze methode het beste smaakprofiel haalt.",
-                  "markdown_recept": "## Recept Samenvatting\\n- **Dosering:** XXg\\n- **Maalgraad:** XX (Ode / Comandante)\\n- **Watertemperatuur:** XX°C\\n- **Water Blend Advies:** Advies over PPM/Lotus water\\n- **Ratio:** 1:XX",
+                  "water_blend": {{
+                    "spa_reine_g": 210,
+                    "bar_le_duc_g": 90,
+                    "toelichting": "70% Spa Reine / 30% Bar-le-Duc gekozen om de frisse aciditeit en florale tonen te accentueren."
+                  }},
+                  "markdown_recept": "## Recept Samenvatting\\n- **Dosering:** XXg\\n- **Maalgraad:** XX (Ode / Comandante)\\n- **Watertemperatuur:** XX°C\\n- **Ratio:** 1:XX",
                   "stappen": [
                     {{"start_sec": 0, "duur_sec": 45, "titel": "Bloom", "actie": "Giet XXg water met ronddraaiende beweging", "doel_water_g": 50}},
                     {{"start_sec": 45, "duur_sec": 45, "titel": "Eerste Schenking", "actie": "Giet rustig door tot XXg", "doel_water_g": 160}}
@@ -269,7 +271,7 @@ if api_key:
 
                 try:
                     response = client.models.generate_content(
-                        model="gemini-1.5-flash",
+                        model="gemini-2.5-flash",
                         contents=[prompt, image]
                     )
 
@@ -318,6 +320,19 @@ if "recipe_raw" in st.session_state:
                 st.info(f"🌟 **Meest optimale zetmethode voor deze boon:** **{meest_geschikt}**\n\n_{recipe_data.get('reden_meest_geschikt', '')}_")
 
             st.markdown("---")
+
+            # Water Blend Weergave
+            water_blend = recipe_data.get("water_blend", {})
+            if water_blend:
+                st.subheader("💧 Exacte Water Blend (Spa Reine & Bar-le-Duc)")
+                col_spa, col_bld = st.columns(2)
+                with col_spa:
+                    st.metric("🟦 Spa Reine", f"{water_blend.get('spa_reine_g', 0)} gram")
+                with col_bld:
+                    st.metric("🟩 Bar-le-Duc", f"{water_blend.get('bar_le_duc_g', 0)} gram")
+                st.caption(f"💡 _{water_blend.get('toelichting', '')}_")
+                st.markdown("---")
+
             st.markdown(recipe_data.get("markdown_recept", "Geen recept details beschikbaar."))
 
             # 4.1 Real-Time Live Voice Timer
