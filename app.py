@@ -21,7 +21,7 @@ def load_data():
     return {
         "grinder": "Comandante C40 Tigershark",
         "last_feedback": None,
-        "advice": "Welkom! Brouw je eerste kopje om persoonlijk advies te krijgen."
+        "advice": "Welkom! Kies hieronder je grinder en brouw je eerste kopje."
     }
 
 def save_data(data):
@@ -155,19 +155,40 @@ if not st.session_state.splash_done:
     st.rerun()
 
 # ==========================================
-# 5. SIDEBAR INSTELLINGEN (MOLEN)
+# 5. GRINDERS DATABASE (MET SVG ILLUSTRATIES)
 # ==========================================
-with st.sidebar:
-    st.header("⚙️ App Instellingen")
-    current_grinder = st.selectbox(
-        "Selecteer je molen:", 
-        ["Comandante C40 Tigershark", "Fellow Ode Gen 2", "Baratza Encore"], 
-        index=["Comandante C40 Tigershark", "Fellow Ode Gen 2", "Baratza Encore"].index(st.session_state.data["grinder"])
-    )
-    if st.button("Molen Opslaan"):
-        st.session_state.data["grinder"] = current_grinder
-        save_data(st.session_state.data)
-        st.success("Molen bijgewerkt!")
+GRINDERS = {
+    "Comandante C40 Tigershark": {
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="35" y="30" width="30" height="50" rx="4" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <line x1="35" y1="45" x2="65" y2="45" stroke="#2B1E1A" stroke-width="2"/>
+                <path d="M50 30 L50 15 L75 15" stroke="#2B1E1A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="78" cy="15" r="5" fill="#C06C4C"/>
+                <path d="M35 80 L50 92 L65 80 Z" stroke="#2B1E1A" stroke-width="2" fill="#2B1E1A"/>
+            </svg>
+        """
+    },
+    "Fellow Ode Gen 2": {
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="32" y="35" width="36" height="45" rx="6" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <path d="M38 35 L30 15 L70 15 L62 35 Z" stroke="#2B1E1A" stroke-width="2.5" fill="#FFFFFF"/>
+                <circle cx="50" cy="58" r="5" stroke="#2B1E1A" stroke-width="2" fill="#C06C4C"/>
+                <path d="M68 62 L78 67" stroke="#2B1E1A" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+        """
+    },
+    "Baratza Encore": {
+        "svg_icon": """
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M35 30 L65 30 L72 82 L28 82 Z" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
+                <path d="M40 30 L43 12 L57 12 L60 30 Z" stroke="#2B1E1A" stroke-width="2.5" fill="#FFFFFF"/>
+                <rect x="65" y="55" width="6" height="12" rx="2" fill="#2B1E1A"/>
+            </svg>
+        """
+    }
+}
 
 # ==========================================
 # 6. RECEPTEN DATABASE (MET SVG AFBEELDINGEN)
@@ -176,7 +197,7 @@ RECIPES = {
     "V60 Single Cup (Lichte Branding)": {
         "method": "Hario V60",
         "svg_icon": """
-            <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 25 L80 25 L62 75 C60 80 55 82 50 82 C45 82 40 80 38 75 Z" stroke="#C06C4C" stroke-width="3" fill="#FFF8F5"/>
                 <line x1="20" y1="25" x2="80" y2="25" stroke="#2B1E1A" stroke-width="3" stroke-linecap="round"/>
                 <path d="M32 25 L43 75" stroke="#2B1E1A" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
@@ -209,10 +230,28 @@ if st.session_state.page == "home":
         </div>
     """, unsafe_allow_html=True)
 
-    # Intelligent Adviesvak op basis van vorige feedback
     if st.session_state.data.get("advice"):
         st.info(f"💡 **AI Barista Advies:** {st.session_state.data['advice']}")
 
+    st.subheader("⚙️ Kies je Grinder")
+    st.write("Selecteer je grinder voor de juiste maal-instructies:")
+    
+    for grinder_name, grinder_data in GRINDERS.items():
+        is_selected = (st.session_state.data["grinder"] == grinder_name)
+        button_label = f"✓ Actieve Grinder: {grinder_name}" if is_selected else f"Kies {grinder_name}"
+
+        col_img, col_btn = st.columns([1, 2], vertical_alignment="center")
+        with col_img:
+            st.markdown(f"<div style='text-align: center;'>{grinder_data['svg_icon']}</div>", unsafe_allow_html=True)
+        with col_btn:
+            if st.button(button_label, key=f"btn_grinder_{grinder_name}"):
+                st.session_state.data["grinder"] = grinder_name
+                save_data(st.session_state.data)
+                st.success(f"Grinder ingesteld op: {grinder_name}")
+                st.rerun()
+        st.markdown("<hr style='margin: 15px 0; border-color: #EAE1D9;'>", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("📸 Scan je boon")
     uploaded_file = st.camera_input("Maak een foto van het etiket")
     if uploaded_file:
@@ -227,10 +266,10 @@ if st.session_state.page == "home":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    for recipe_name, data in RECIPES.items():
+    for recipe_name, recipe_data in RECIPES.items():
         col_img, col_btn = st.columns([1, 2], vertical_alignment="center")
         with col_img:
-            st.markdown(f"<div style='text-align: center;'>{data['svg_icon']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center;'>{recipe_data['svg_icon']}</div>", unsafe_allow_html=True)
         with col_btn:
             if st.button(f"Zet {recipe_name}", key=f"btn_{recipe_name}"):
                 st.session_state.selected_recipe = recipe_name
@@ -252,7 +291,7 @@ elif st.session_state.page == "brew_screen":
         st.rerun()
 
     st.divider()
-    st.subheader(f"📖 Brouwen met {st.session_state.data['grinder']}")
+    st.subheader(f"📖 Brouwen met grinder: {st.session_state.data['grinder']}")
     st.write(f"**Koffie:** {st.session_state.coffee_amount}g | **Water:** {st.session_state.water_amount}g")
 
     tab_timer, tab_eval = st.tabs(["⏱️ Live Timer & Stappen", "📊 Smaak-Feedback & Analyse"])
@@ -296,18 +335,18 @@ elif st.session_state.page == "brew_screen":
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🍋 Te zuur (Onderextractie)"):
-                st.session_state.data["advice"] = f"Vorige kop was te zuur. Advies voor {st.session_state.data['grinder']}: Stel de molen **1-2 kliks fijner** in of verhoog de watertemperatuur."
+                st.session_state.data["advice"] = f"Vorige kop was te zuur. Advies voor {st.session_state.data['grinder']}: Stel de grinder **1-2 kliks fijner** in of verhoog de watertemperatuur."
                 save_data(st.session_state.data)
                 st.success("Feedback opgeslagen! Je vindt het nieuwe advies op het hoofdscherm.")
 
             if st.button("🌾 Droog / Samentrekkend (Astringent)"):
-                st.session_state.data["advice"] = f"Vorige kop was te droog in de mond. Advies: Veel koffiestof (fines). Stel de molen **grover** in."
+                st.session_state.data["advice"] = f"Vorige kop was te droog in de mond. Advies: Veel koffiestof (fines). Stel de grinder **grover** in."
                 save_data(st.session_state.data)
                 st.success("Feedback opgeslagen!")
 
         with col2:
             if st.button("☕ Te bitter (Overextractie)"):
-                st.session_state.data["advice"] = f"Vorige kop was te bitter. Advies voor {st.session_state.data['grinder']}: Stel de molen **1-2 kliks grover** in."
+                st.session_state.data["advice"] = f"Vorige kop was te bitter. Advies voor {st.session_state.data['grinder']}: Stel de grinder **1-2 kliks grover** in."
                 save_data(st.session_state.data)
                 st.success("Feedback opgeslagen! Je vindt het nieuwe advies op het hoofdscherm.")
 
