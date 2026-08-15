@@ -279,7 +279,6 @@ if api_key:
                 Geef daarna de mooie markdown samenvatting inclusief AI Geschiktheidsadvies, Water Blend, Maalgraad en Recept.
                 """
 
-                # API Call met de nieuwe Google GenAI SDK
                 response = client.models.generate_content(
                     model="gemini-1.5-flash", contents=[prompt, image]
                 )
@@ -420,13 +419,139 @@ if api_key:
                         )
                         st.session_state["timer_active"] = False
 
-            # Daadwerkelijke Doorlooptijd & Auto-Tuner
-            st.markdown("---")
-            st.subheader(
-                "⏱️ Daadwerkelijke Doorlooptijd & Recept Auto-Tuner"
-            )
-            st.write(
-                "Hoe lang duurde de totale zetbeurt van het eerste drupje tot het laatste drupje / sissen?"
-            )
+                # Daadwerkelijke Doorlooptijd & Auto-Tuner
+                st.markdown("---")
+                st.subheader(
+                    "⏱️ Daadwerkelijke Doorlooptijd & Recept Auto-Tuner"
+                )
+                st.write(
+                    "Hoe lang duurde de totale zetbeurt van het eerste drupje tot het laatste drupje / sissen?"
+                )
 
-            doel_minuten = totaal_tijd //
+                doel_minuten = totaal_tijd // 60
+                doel_seconden = totaal_tijd % 60
+                st.info(
+                    f"🎯 **Streef/Doel doorlooptijd uit recept:** `{doel_minuten:02d}:{doel_seconden:02d}` ({totaal_tijd} seconden)"
+                )
+
+                col_m, col_s = st.columns(2)
+                with col_m:
+                    actueel_min = st.number_input(
+                        "Daadwerkelijke minuten:",
+                        min_value=0,
+                        max_value=120,
+                        value=doel_minuten,
+                    )
+                with col_s:
+                    actueel_sec = st.number_input(
+                        "Daadwerkelijke seconden:",
+                        min_value=0,
+                        max_value=59,
+                        value=doel_seconden,
+                    )
+
+                daadwerkelijke_totaal_sec = (actueel_min * 60) + actueel_sec
+                verschil_sec = daadwerkelijke_totaal_sec - totaal_tijd
+
+                # Smaak-Tuner & Rating Opslaan
+                st.markdown("---")
+                st.subheader("🧪 AI Smaak-Tuner & Beoordeling")
+
+                rating = st.slider("Beoordeel dit kopje (1-5 sterren):", 1, 5, 5)
+                smaak_feedback = st.radio(
+                    "Hoe was de balans van de extractie?",
+                    [
+                        "✨ Perfect gebalanceerd & heerlijk zoet",
+                        "🍋 Te zuur / Flauw / Te snel doorgelopen (Onder-extractie)",
+                        "🍫 Te bitter / Droog / Zwaar (Over-extractie)",
+                    ],
+                )
+
+                if st.button("💾 Opslaan & Recept Aanpassen voor Volgende Keer"):
+                    log_entry = {
+                        "datum": str(date.today()),
+                        "roaster": roaster,
+                        "coffee_name": coffee_name,
+                        "target_time_sec": totaal_tijd,
+                        "actual_time_sec": daadwerkelijke_totaal_sec,
+                        "time_difference_sec": verschil_sec,
+                        "rating": rating,
+                        "feedback": smaak_feedback,
+                        "recipe": recipe_data,
+                    }
+                    brew_history.append(log_entry)
+                    save_data(LOG_FILE, brew_history)
+                    st.success("Opslaan geslaagd! Jouw exacte tijden zijn opgeslagen in de historie.")
+
+                    st.markdown("### 🛠️ Automatische Recept-Aanpassing:")
+
+                    if abs(verschil_sec) <= 10 and "Perfect" in smaak_feedback:
+                        st.success(
+                            f"🎯 **Goudschot!** Je doorlooptijd ({actueel_min:02d}:{actueel_sec:02d}) zat binnen 10 seconden van het doel. Behoud exact deze instellingen!"
+                        )
+                    elif verschil_sec > 10:
+                        st.warning(
+                            f"🐢 **Te trage doorloop:** Je deed er **{verschil_sec} seconden LANGER** over dan gepland.\n\n"
+                            f"**Aanpassingen voor je volgende zetbeurt:**\n"
+                            f"- **Fellow Ode Gen 2:** Maal **0.2 tot 0.4 stand GROVER**.\n"
+                            f"- **Comandante C40:** Klik **1 tot 2 kliks GROVER**.\n"
+                            f"- **Techniek:** Pas druppelsnelheid of opgietsnelheid aan."
+                        )
+                    elif verschil_sec < -10:
+                        st.warning(
+                            f"🐇 **Te snelle doorloop:** Je was **{abs(verschil_sec)} seconden SNELLER** klaar dan gepland.\n\n"
+                            f"**Aanpassingen voor je volgende zetbeurt:**\n"
+                            f"- **Fellow Ode Gen 2:** Maal **0.2 tot 0.4 stand FIJNER**.\n"
+                            f"- **Comandante C40:** Klik **1 tot 2 kliks FIJNER**."
+                        )
+                    else:
+                        st.info(
+                            f"⏱️ Je doorlooptijd week {verschil_sec} seconden af van de streeftijd."
+                        )
+
+        except Exception as e:
+            st.markdown(raw_text)
+
+# Dedicated Grinder Maintenance Dashboard
+st.markdown("---")
+st.subheader("🧹 Koffiemolen Onderhouds Dashboard")
+
+col_a, col_b = st.columns(2)
+
+with col_a:
+    st.markdown("### ⚙️ Fellow Ode Gen 2")
+    ode_count = maint_data.get("ode_brew_count", 0)
+    st.write(f"Aantal zetbeurten sinds telling: **{ode_count}**")
+
+    if ode_count >= 100:
+        st.error(
+            "🚨 **Grondig onderhoud vereist:** Verwijder de maalschijven, borstel koffie-oliën weg en controleer de kalibratie."
+        )
+    elif ode_count >= 30:
+        st.warning(
+            "⚠️ **Tijd voor borstelbeurt!** Maak de maalmond en 'catch cup' magneet schoon."
+        )
+    else:
+        st.caption("Status: Maalschijven zijn schoon en op niveau.")
+
+    if st.button("Reset Fellow Ode Teller"):
+        maint_data["ode_brew_count"] = 0
+        save_data(MAINTENANCE_FILE, maint_data)
+        st.rerun()
+
+with col_b:
+    st.markdown("### 🪵 Comandante C40")
+    com_count = maint_data.get("comandante_brew_count", 0)
+    st.write(f"Aantal zetbeurten sinds telling: **{com_count}**")
+
+    if com_count >= 50:
+        st.warning(
+            "⚠️ **Onderhoudsbeurt:** Demonteer de as en de braam. Maak schoon met een droge borstel en verzorg de behuizing met Comandante Balm."
+        )
+    else:
+        st.caption("Status: Lagers en maalschijf in topconditie.")
+
+    if st.button("Reset Comandante Teller"):
+        maint_data["comandante_brew_count"] = 0
+        save_data(MAINTENANCE_FILE, maint_data)
+        st.rerun()
