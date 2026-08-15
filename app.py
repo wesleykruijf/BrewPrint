@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 from datetime import date
 from PIL import Image
@@ -7,7 +8,7 @@ import streamlit as st
 from google import genai
 
 # ==========================================
-# 1. PAGINA CONFIGURATIE
+# 1. PAGINA CONFIGURATIE & API KEY SETUP
 # ==========================================
 st.set_page_config(
     page_title="Ultimate Barista AI Station", page_icon="☕", layout="centered"
@@ -18,6 +19,12 @@ st.write(
     "AI Label Herkenning • Visuele Zetmethode Picker • Geschiktheid & Advies • "
     "Water Blend & Iced Brew • Live Voice Timer • Doorlooptijd Auto-Tuner • Molen Tracker"
 )
+
+# API Key automatisch ophalen via Secrets of Environment Variables
+api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    api_key = st.text_input("Voer je Gemini API Key in:", type="password")
 
 # ==========================================
 # 2. BESTANDEN & OPSLAG HULPFUNCTIES
@@ -47,10 +54,8 @@ maint_data = load_data(
 )
 
 # ==========================================
-# 3. API KEY & INPUT SECTIE
+# 3. HOOFD LOGICA
 # ==========================================
-api_key = st.text_input("Voer je Gemini API Key in:", type="password")
-
 if api_key:
     client = genai.Client(api_key=api_key)
 
@@ -95,7 +100,6 @@ if api_key:
             ],
         )
 
-        # Visuele Zetmethode Selectie
         st.markdown("### ☕ Kies je Zetmethode")
 
         IMG_V60 = "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&auto=format&fit=crop&q=80"
@@ -112,27 +116,17 @@ if api_key:
             st.image(IMG_V60, caption="Hario V60", use_container_width=True)
             if st.button(
                 "Kies V60",
-                type=(
-                    "primary"
-                    if st.session_state["zetmethode"] == "V60"
-                    else "secondary"
-                ),
+                type="primary" if st.session_state["zetmethode"] == "V60" else "secondary",
                 use_container_width=True,
             ):
                 st.session_state["zetmethode"] = "V60"
                 st.rerun()
 
         with col_aero:
-            st.image(
-                IMG_AEROPRESS, caption="AeroPress", use_container_width=True
-            )
+            st.image(IMG_AEROPRESS, caption="AeroPress", use_container_width=True)
             if st.button(
                 "Kies AeroPress",
-                type=(
-                    "primary"
-                    if st.session_state["zetmethode"] == "AeroPress"
-                    else "secondary"
-                ),
+                type="primary" if st.session_state["zetmethode"] == "AeroPress" else "secondary",
                 use_container_width=True,
             ):
                 st.session_state["zetmethode"] = "AeroPress"
@@ -142,30 +136,17 @@ if api_key:
             st.image(IMG_CHEMEX, caption="Chemex", use_container_width=True)
             if st.button(
                 "Kies Chemex",
-                type=(
-                    "primary"
-                    if st.session_state["zetmethode"] == "Chemex"
-                    else "secondary"
-                ),
+                type="primary" if st.session_state["zetmethode"] == "Chemex" else "secondary",
                 use_container_width=True,
             ):
                 st.session_state["zetmethode"] = "Chemex"
                 st.rerun()
 
         with col_shiz:
-            st.image(
-                IMG_SHIZUKU,
-                caption="Hario Shizuku",
-                use_container_width=True,
-            )
+            st.image(IMG_SHIZUKU, caption="Hario Shizuku", use_container_width=True)
             if st.button(
                 "Kies Shizuku",
-                type=(
-                    "primary"
-                    if st.session_state["zetmethode"]
-                    == "Hario Shizuku (Slow Drip)"
-                    else "secondary"
-                ),
+                type="primary" if st.session_state["zetmethode"] == "Hario Shizuku (Slow Drip)" else "secondary",
                 use_container_width=True,
             ):
                 st.session_state["zetmethode"] = "Hario Shizuku (Slow Drip)"
@@ -173,17 +154,12 @@ if api_key:
 
         zetmethode = st.session_state["zetmethode"]
 
-        # Dynamische filteropties
         if zetmethode == "AeroPress":
             filter_keuze = "AeroPress (AI kiest de optimale filtercombinatie)"
-            st.info(
-                "💡 **AeroPress Modus:** De AI analyseert de koffieboon en adviseert direct de ideale combinatie (1x Papier, 2x Papier of Papier + RVS Metaal)."
-            )
+            st.info("💡 **AeroPress Modus:** De AI kiest de ideale filtercombinatie.")
         elif zetmethode == "Hario Shizuku (Slow Drip)":
             filter_keuze = "Hario Shizuku Ingebouwd RVS Dripper Filter"
-            st.info(
-                "💧 **Hario Shizuku Modus:** Slow drip koudwater extractie (druppeltijd ~1-2 uur)."
-            )
+            st.info("💧 **Hario Shizuku Modus:** Slow drip koudwater extractie.")
         else:
             filter_keuze = st.selectbox(
                 "Welk filterpapier gebruik je?",
@@ -195,23 +171,12 @@ if api_key:
                 ],
             )
 
-        # Iced Flash Brew Toggle
         iced_brew = False
         if zetmethode != "Hario Shizuku (Slow Drip)":
-            iced_brew = st.checkbox(
-                "🧊 Maak als Iced Flash Brew (met ijsklontjes in de server)"
-            )
+            iced_brew = st.checkbox("🧊 Maak als Iced Flash Brew")
 
-        water_opties = (
-            [160, 300, 500]
-            if zetmethode not in ["Chemex", "Hario Shizuku (Slow Drip)"]
-            else [300, 500, 600, 750]
-        )
-        standaard_water = (
-            500
-            if zetmethode == "Hario Shizuku (Slow Drip)"
-            else (300 if zetmethode == "Chemex" else 160)
-        )
+        water_opties = [160, 300, 500] if zetmethode not in ["Chemex", "Hario Shizuku (Slow Drip)"] else [300, 500, 600, 750]
+        standaard_water = 500 if zetmethode == "Hario Shizuku (Slow Drip)" else (300 if zetmethode == "Chemex" else 160)
 
         totaal_water = st.select_slider(
             "Totaal hoeveelheid vloeistof / water (ml/gram):",
@@ -220,63 +185,30 @@ if api_key:
         )
 
         if st.button("🚀 Genereer Recept & AI Advies", type="primary"):
-            with st.spinner(
-                "Koffiezakje analyseren, geschiktheid bepalen & recept berekenen..."
-            ):
+            with st.spinner("Koffiezakje analyseren & recept berekenen..."):
                 prompt = f"""
-                Jij bent een meesterbarista. Analyseer de afbeelding van het koffiezakje.
-                Extract: 
-                1. Branderij / Roaster
-                2. Koffienaam / Herkomst
-                3. Smaaknotities & Branding (Licht/Medium/Donker)
-
-                BEOORDEEL DE GEKOZEN ZETMETHODE ({zetmethode}):
-                1. Bepaal of deze specifieke koffieboon geschikte eigenschappen heeft voor {zetmethode}.
-                2. Bepaal wat op basis van de boon (herkomst, verwerking, branding, smaaknotities) de ABSOLUUT MEEST GESCHIKTE ZETMETHODE zou zijn (kies uit: V60, AeroPress, Chemex, of Hario Shizuku).
-
+                Analyseer de afbeelding van het koffiezakje.
                 Genereer een recept voor {zetmethode} met totaal {totaal_water}g vloeistof.
-                - Molen: {molen_keuze}
-                - Filter: {filter_keuze}
-                - Leeftijd: {dagen_oud} dagen oud.
-                - Iced Flash Brew modus: {"JA" if iced_brew else "NEE"}
+                Molen: {molen_keuze}, Filter: {filter_keuze}, Leeftijd: {dagen_oud} dagen.
 
-                SPECIFIEK VOOR HARIO SHIZUKU:
-                Als zetmethode = "Hario Shizuku (Slow Drip)":
-                - Gebruik ijskoud water (0-5°C).
-                - Adviseer een gemiddeld fijne maalgraad.
-                - Geef stappen voor het bevochtigen van de koffie puck en instellen van de druppelsnelheid.
+                STRIKT FORMAT: Geef enkel een JSON-object terug ingesloten in ```json ```.
 
-                STRIKT FORMAT: Geef eerst een JSON blok terug met exact de structuur, daarna de uitgeschreven markdown samenvatting.
-
-                JSON Structuur vereist:
+                Correct JSON-formaat:
                 ```json
                 {{
                   "roaster": "Naam Branderij",
                   "coffee_name": "Naam Koffie",
                   "is_geschikt_voor_gekozen_methode": true,
-                  "geschiktheids_toelichting": "Deze fruitige Ethiopische koffie komt fantastisch tot zijn recht op {zetmethode}.",
+                  "geschiktheids_toelichting": "Toelichting over geschiktheid.",
                   "meest_geschikte_zetmethode": "V60",
-                  "reden_meest_geschikt": "De hoge aciditeit en florale tonen schitteren het beste bij een heldere V60 opgieting.",
-                  "filter_advies": "1x Papier",
-                  "is_iced": {str(iced_brew).lower()},
-                  "ice_gram": {int(totaal_water * 0.4) if iced_brew else 0},
-                  "hot_water_gram": {int(totaal_water * 0.6) if iced_brew else totaal_water},
-                  "water_blend": {{
-                    "spa_gram": {int(totaal_water * 0.7)},
-                    "bar_gram": {int(totaal_water * 0.3)},
-                    "ratio": "70% Spa / 30% Bar-le-Duc"
-                  }},
-                  "dosering": "18g",
-                  "maalgraad": "Stand 4.1 op Ode Gen 2 / 12 clicks Comandante",
-                  "temperatuur": "93°C",
+                  "reden_meest_geschikt": "Reden voor zetmethode.",
+                  "markdown_recept": "## Recept Samenvatting\\n- **Dosering:** 18g\\n- **Maalgraad:** 4.1",
                   "stappen": [
-                    {{"start_sec": 0, "duur_sec": 45, "titel": "Bloom Phase", "actie": "Giet 50g heet water in spiraal.", "doel_water_g": 50}},
-                    {{"start_sec": 45, "duur_sec": 30, "titel": "Schenking 1", "actie": "Giet rustig door tot 150g.", "doel_water_g": 150}},
-                    {{"start_sec": 75, "duur_sec": 45, "titel": "Drawdown", "actie": "Laat doorlopen.", "doel_water_g": 180}}
+                    {{"start_sec": 0, "duur_sec": 45, "titel": "Bloom", "actie": "Giet 50g water", "doel_water_g": 50}},
+                    {{"start_sec": 45, "duur_sec": 45, "titel": "Schenking 1", "actie": "Giet door tot 160g", "doel_water_g": 160}}
                   ]
                 }}
                 ```
-                Geef daarna de mooie markdown samenvatting inclusief AI Geschiktheidsadvies, Water Blend, Maalgraad en Recept.
                 """
 
                 response = client.models.generate_content(
@@ -296,245 +228,159 @@ if api_key:
         st.markdown("---")
         raw_text = st.session_state["recipe_raw"]
 
-        try:
-            json_str = raw_text.split("```json")[1].split("```")[0].strip()
-            recipe_data = json.loads(json_str)
-            markdown_text = raw_text.split("```")[-1].strip()
+        # Robuuste Extraction van JSON via Regex
+        json_match = re.search(r"```json\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
+        if not json_match:
+            json_match = re.search(r"(\{.*\})", raw_text, re.DOTALL)
 
-            roaster = recipe_data.get("roaster", "Onbekend")
-            coffee_name = recipe_data.get("coffee_name", "Onbekend")
+        if json_match:
+            try:
+                recipe_data = json.loads(json_match.group(1))
 
-            # AI Geschiktheidsadvies Kaart
-            st.subheader("💡 Barista AI Geschiktheids-Analyse")
-            is_geschikt = recipe_data.get(
-                "is_geschikt_voor_gekozen_methode", True
-            )
-            meest_geschikt = recipe_data.get(
-                "meest_geschikte_zetmethode", "V60"
-            )
+                roaster = recipe_data.get("roaster", "Onbekend")
+                coffee_name = recipe_data.get("coffee_name", "Onbekend")
 
-            if is_geschikt:
-                st.success(
-                    f"✅ **Geschikt voor {zetmethode}!** {recipe_data.get('geschiktheids_toelichting', '')}"
-                )
-            else:
-                st.warning(
-                    f"⚠️ **Let op:** {recipe_data.get('geschiktheids_toelichting', '')}"
-                )
+                st.subheader("💡 Barista AI Geschiktheids-Analyse")
+                is_geschikt = recipe_data.get("is_geschikt_voor_gekozen_methode", True)
+                meest_geschikt = recipe_data.get("meest_geschikte_zetmethode", "V60")
 
-            if meest_geschikt.lower() != zetmethode.lower():
-                st.info(
-                    f"🌟 **Meest optimale zetmethode voor deze boon:** **{meest_geschikt}**\n\n_{recipe_data.get('reden_meest_geschikt', '')}_"
-                )
+                if is_geschikt:
+                    st.success(f"✅ **Geschikt voor {zetmethode}!** {recipe_data.get('geschiktheids_toelichting', '')}")
+                else:
+                    st.warning(f"⚠️ **Let op:** {recipe_data.get('geschiktheids_toelichting', '')}")
 
-            st.markdown("---")
-            st.markdown(markdown_text)
+                if meest_geschikt.lower() != zetmethode.lower():
+                    st.info(f"🌟 **Meest optimale zetmethode:** **{meest_geschikt}**\n\n_{recipe_data.get('reden_meest_geschikt', '')}_")
 
-            # Real-Time Timer
-            st.markdown("---")
-            st.subheader(
-                "⏱️ Real-Time Timer met Live Gesproken Begeleiding"
-            )
+                st.markdown("---")
+                st.markdown(recipe_data.get("markdown_recept", "Geen recept details beschikbaar."))
 
-            stappen = recipe_data.get("stappen", [])
+                # Real-Time Timer Component
+                st.markdown("---")
+                st.subheader("⏱️ Real-Time Timer met Live Gesproken Begeleiding")
+                stappen = recipe_data.get("stappen", [])
 
-            if stappen:
-                totaal_tijd = (
-                    stappen[-1]["start_sec"] + stappen[-1]["duur_sec"]
-                )
+                if stappen:
+                    totaal_tijd = stappen[-1]["start_sec"] + stappen[-1]["duur_sec"]
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    start_btn = st.button(
-                        "▶️ Start Live Timer & Spraak", type="primary"
-                    )
-                with col2:
-                    stop_btn = st.button("⏹️ Reset Timer")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("▶️ Start Live Timer & Spraak", type="primary"):
+                            st.session_state["timer_active"] = True
+                    with col2:
+                        if st.button("⏹️ Reset Timer"):
+                            st.session_state["timer_active"] = False
 
-                if start_btn:
-                    st.session_state["timer_active"] = True
-
-                if stop_btn:
-                    st.session_state["timer_active"] = False
-
-                timer_container = st.empty()
-
-                if st.session_state.get("timer_active", False):
-                    laatste_gesproken_stap = -1
-                    for huidig_sec in range(0, totaal_tijd + 1):
-                        if not st.session_state.get("timer_active", False):
-                            break
-
-                        huidige_stap_idx = 0
-                        huidige_stap = stappen[0]
-                        for idx, s in enumerate(stappen):
-                            if (
-                                s["start_sec"]
-                                <= huidig_sec
-                                < (s["start_sec"] + s["duur_sec"])
-                            ):
-                                huidige_stap = s
-                                huidige_stap_idx = idx
-                                break
-
-                        if huidige_stap_idx != laatste_gesproken_stap:
-                            tekst_om_te_spreken = f"{huidige_stap['titel']}. {huidige_stap['actie']}"
-                            tts_html = f"""
-                            <script>
-                            var msg = new SpeechSynthesisUtterance("{tekst_om_te_spreken}");
-                            msg.lang = 'nl-NL';
-                            window.speechSynthesis.speak(msg);
-                            </script>
-                            """
-                            st.components.v1.html(tts_html, height=0)
-                            laatste_gesproken_stap = huidige_stap_idx
-
-                        minuten = huidig_sec // 60
-                        seconden = huidig_sec % 60
-                        tijd_str = f"{minuten:02d}:{seconden:02d}"
-                        voortgang = min(1.0, huidig_sec / totaal_tijd)
-
-                        with timer_container.container():
-                            st.metric(
-                                label="⏱️ Totale Tijd", value=tijd_str
-                            )
-                            st.progress(voortgang)
-
-                            st.markdown(
-                                f"### 🎯 Stap: **{huidige_stap['titel']}**"
-                            )
-                            st.info(
-                                f"👉 **ACTIE NU:** {huidige_stap['actie']}"
-                            )
-                            st.success(
-                                f"⚖️ **Doelgewicht op weegschaal:** **{huidige_stap['doel_water_g']} gram**"
-                            )
-
-                        time.sleep(1)
+                    timer_container = st.empty()
 
                     if st.session_state.get("timer_active", False):
-                        st.balloons()
-                        st.success(
-                            "🎉 Zetsessie voltooid! Vul hieronder je daadwerkelijke doorlooptijd in."
-                        )
-                        st.session_state["timer_active"] = False
+                        laatste_gesproken_stap = -1
+                        for huidig_sec in range(0, totaal_tijd + 1):
+                            if not st.session_state.get("timer_active", False):
+                                break
 
-                # Daadwerkelijke Doorlooptijd & Auto-Tuner
-                st.markdown("---")
-                st.subheader(
-                    "⏱️ Daadwerkelijke Doorlooptijd & Recept Auto-Tuner"
-                )
-                st.write(
-                    "Hoe lang duurde de totale zetbeurt van het eerste drupje tot het laatste drupje / sissen?"
-                )
+                            huidige_stap_idx = 0
+                            huidige_stap = stappen[0]
+                            for idx, s in enumerate(stappen):
+                                if s["start_sec"] <= huidig_sec < (s["start_sec"] + s["duur_sec"]):
+                                    huidige_stap = s
+                                    huidige_stap_idx = idx
+                                    break
 
-                doel_minuten = totaal_tijd // 60
-                doel_seconden = totaal_tijd % 60
-                st.info(
-                    f"🎯 **Streef/Doel doorlooptijd uit recept:** `{doel_minuten:02d}:{doel_seconden:02d}` ({totaal_tijd} seconden)"
-                )
+                            if huidige_stap_idx != laatste_gesproken_stap:
+                                tekst = f"{huidige_stap['titel']}. {huidige_stap['actie']}"
+                                tts_html = f"""
+                                <script>
+                                var msg = new SpeechSynthesisUtterance("{tekst}");
+                                msg.lang = 'nl-NL';
+                                window.speechSynthesis.speak(msg);
+                                </script>
+                                """
+                                st.components.v1.html(tts_html, height=0)
+                                laatste_gesproken_stap = huidige_stap_idx
 
-                col_m, col_s = st.columns(2)
-                with col_m:
-                    actueel_min = st.number_input(
-                        "Daadwerkelijke minuten:",
-                        min_value=0,
-                        max_value=120,
-                        value=doel_minuten,
+                            minuten = huidig_sec // 60
+                            seconden = huidig_sec % 60
+                            tijd_str = f"{minuten:02d}:{seconden:02d}"
+
+                            with timer_container.container():
+                                st.metric(label="⏱️ Totale Tijd", value=tijd_str)
+                                st.progress(min(1.0, huidig_sec / totaal_tijd))
+                                st.markdown(f"### 🎯 Stap: **{huidige_stap['titel']}**")
+                                st.info(f"👉 **ACTIE NU:** {huidige_stap['actie']}")
+                                st.success(f"⚖️ **Doelgewicht:** **{huidige_stap['doel_water_g']} gram**")
+
+                            time.sleep(1)
+
+                        if st.session_state.get("timer_active", False):
+                            st.balloons()
+                            st.success("🎉 Zetsessie voltooid!")
+                            st.session_state["timer_active"] = False
+
+                    # Doorlooptijd / Auto-tuner
+                    st.markdown("---")
+                    st.subheader("⏱️ Doorlooptijd & Auto-Tuner")
+                    doel_min = totaal_tijd // 60
+                    doel_sec = totaal_tijd % 60
+                    st.info(f"🎯 **Doeltijd:** `{doel_min:02d}:{doel_sec:02d}` ({totaal_tijd}s)")
+
+                    col_m, col_s = st.columns(2)
+                    with col_m:
+                        actueel_min = st.number_input("Daadwerkelijke minuten:", 0, 120, doel_min)
+                    with col_s:
+                        actueel_sec = st.number_input("Daadwerkelijke seconden:", 0, 59, doel_sec)
+
+                    daadwerkelijk_totaal = (actueel_min * 60) + actueel_sec
+                    verschil = daadwerkelijk_totaal - totaal_tijd
+
+                    rating = st.slider("Beoordeel dit kopje (1-5 sterren):", 1, 5, 5)
+                    smaak_feedback = st.radio(
+                        "Hoe was de balans?",
+                        [
+                            "✨ Perfect gebalanceerd & heerlijk zoet",
+                            "🍋 Te zuur / Flauw (Onder-extractie)",
+                            "🍫 Te bitter / Droog (Over-extractie)",
+                        ],
                     )
-                with col_s:
-                    actueel_sec = st.number_input(
-                        "Daadwerkelijke seconden:",
-                        min_value=0,
-                        max_value=59,
-                        value=doel_seconden,
-                    )
 
-                daadwerkelijke_totaal_sec = (actueel_min * 60) + actueel_sec
-                verschil_sec = daadwerkelijke_totaal_sec - totaal_tijd
-
-                # Smaak-Tuner & Rating Opslaan
-                st.markdown("---")
-                st.subheader("🧪 AI Smaak-Tuner & Beoordeling")
-
-                rating = st.slider("Beoordeel dit kopje (1-5 sterren):", 1, 5, 5)
-                smaak_feedback = st.radio(
-                    "Hoe was de balans van de extractie?",
-                    [
-                        "✨ Perfect gebalanceerd & heerlijk zoet",
-                        "🍋 Te zuur / Flauw / Te snel doorgelopen (Onder-extractie)",
-                        "🍫 Te bitter / Droog / Zwaar (Over-extractie)",
-                    ],
-                )
-
-                if st.button("💾 Opslaan & Recept Aanpassen voor Volgende Keer"):
-                    log_entry = {
-                        "datum": str(date.today()),
-                        "roaster": roaster,
-                        "coffee_name": coffee_name,
-                        "target_time_sec": totaal_tijd,
-                        "actual_time_sec": daadwerkelijke_totaal_sec,
-                        "time_difference_sec": verschil_sec,
-                        "rating": rating,
-                        "feedback": smaak_feedback,
-                        "recipe": recipe_data,
-                    }
-                    brew_history.append(log_entry)
-                    save_data(LOG_FILE, brew_history)
-                    st.success("Opslaan geslaagd! Jouw exacte tijden zijn opgeslagen in de historie.")
-
-                    st.markdown("### 🛠️ Automatische Recept-Aanpassing:")
-
-                    if abs(verschil_sec) <= 10 and "Perfect" in smaak_feedback:
-                        st.success(
-                            f"🎯 **Goudschot!** Je doorlooptijd ({actueel_min:02d}:{actueel_sec:02d}) zat binnen 10 seconden van het doel. Behoud exact deze instellingen!"
+                    if st.button("💾 Opslaan & Recept Aanpassen"):
+                        save_data(
+                            LOG_FILE,
+                            brew_history + [{
+                                "datum": str(date.today()),
+                                "roaster": roaster,
+                                "coffee_name": coffee_name,
+                                "target_sec": totaal_tijd,
+                                "actual_sec": daadwerkelijk_totaal,
+                                "rating": rating,
+                            }],
                         )
-                    elif verschil_sec > 10:
-                        st.warning(
-                            f"🐢 **Te trage doorloop:** Je deed er **{verschil_sec} seconden LANGER** over dan gepland.\n\n"
-                            f"**Aanpassingen voor je volgende zetbeurt:**\n"
-                            f"- **Fellow Ode Gen 2:** Maal **0.2 tot 0.4 stand GROVER**.\n"
-                            f"- **Comandante C40:** Klik **1 tot 2 kliks GROVER**.\n"
-                            f"- **Techniek:** Pas druppelsnelheid of opgietsnelheid aan."
-                        )
-                    elif verschil_sec < -10:
-                        st.warning(
-                            f"🐇 **Te snelle doorloop:** Je was **{abs(verschil_sec)} seconden SNELLER** klaar dan gepland.\n\n"
-                            f"**Aanpassingen voor je volgende zetbeurt:**\n"
-                            f"- **Fellow Ode Gen 2:** Maal **0.2 tot 0.4 stand FIJNER**.\n"
-                            f"- **Comandante C40:** Klik **1 tot 2 kliks FIJNER**."
-                        )
-                    else:
-                        st.info(
-                            f"⏱️ Je doorlooptijd week {verschil_sec} seconden af van de streeftijd."
-                        )
+                        st.success("Opslaan geslaagd!")
 
-        except Exception as e:
-            st.markdown(raw_text)
+                        if abs(verschil) <= 10 and "Perfect" in smaak_feedback:
+                            st.success("🎯 **Goudschot!** Behoud deze instellingen.")
+                        elif verschil > 10:
+                            st.warning(f"🐢 **Te traag:** Maal **0.2-0.4 GROVER** op Ode Gen 2 of **1-2 kliks GROVER** op Comandante C40.")
+                        else:
+                            st.warning(f"🐇 **Te snel:** Maal **0.2-0.4 FIJNER** op Ode Gen 2 of **1-2 kliks FIJNER** op Comandante C40.")
 
-# Dedicated Grinder Maintenance Dashboard
+            except Exception as e:
+                st.error(f"Fout bij het verwerken van de gegevens: {e}")
+                st.text(raw_text)
+        else:
+            st.error("Kon geen geldig JSON-format vinden in het antwoord van de AI.")
+            st.text(raw_text)
+
+# Onderhoudsdashboard
 st.markdown("---")
 st.subheader("🧹 Koffiemolen Onderhouds Dashboard")
-
 col_a, col_b = st.columns(2)
 
 with col_a:
     st.markdown("### ⚙️ Fellow Ode Gen 2")
     ode_count = maint_data.get("ode_brew_count", 0)
-    st.write(f"Aantal zetbeurten sinds telling: **{ode_count}**")
-
-    if ode_count >= 100:
-        st.error(
-            "🚨 **Grondig onderhoud vereist:** Verwijder de maalschijven, borstel koffie-oliën weg en controleer de kalibratie."
-        )
-    elif ode_count >= 30:
-        st.warning(
-            "⚠️ **Tijd voor borstelbeurt!** Maak de maalmond en 'catch cup' magneet schoon."
-        )
-    else:
-        st.caption("Status: Maalschijven zijn schoon en op niveau.")
-
-    if st.button("Reset Fellow Ode Teller"):
+    st.write(f"Zetbeurten: **{ode_count}**")
+    if st.button("Reset Ode"):
         maint_data["ode_brew_count"] = 0
         save_data(MAINTENANCE_FILE, maint_data)
         st.rerun()
@@ -542,16 +388,10 @@ with col_a:
 with col_b:
     st.markdown("### 🪵 Comandante C40")
     com_count = maint_data.get("comandante_brew_count", 0)
-    st.write(f"Aantal zetbeurten sinds telling: **{com_count}**")
-
-    if com_count >= 50:
-        st.warning(
-            "⚠️ **Onderhoudsbeurt:** Demonteer de as en de braam. Maak schoon met een droge borstel en verzorg de behuizing met Comandante Balm."
-        )
-    else:
-        st.caption("Status: Lagers en maalschijf in topconditie.")
-
-    if st.button("Reset Comandante Teller"):
+    st.write(f"Zetbeurten: **{com_count}**")
+    if st.button("Reset Comandante"):
         maint_data["comandante_brew_count"] = 0
         save_data(MAINTENANCE_FILE, maint_data)
         st.rerun()
+else:
+    st.warning("⚠️ Geen API Key gevonden. Voer deze hierboven in of stel 'GEMINI_API_KEY' in bij Streamlit Secrets.")
