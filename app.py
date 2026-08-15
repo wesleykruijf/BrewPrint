@@ -24,7 +24,7 @@ def get_ai_advice(image):
     )
     
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-2.5-flash',  # Bijgewerkt naar het actuele model
         contents=[prompt, image]
     )
     
