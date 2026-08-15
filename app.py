@@ -228,7 +228,6 @@ if api_key:
         st.markdown("---")
         raw_text = st.session_state["recipe_raw"]
 
-        # Robuuste Extraction van JSON via Regex
         json_match = re.search(r"```json\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
         if not json_match:
             json_match = re.search(r"(\{.*\})", raw_text, re.DOTALL)
@@ -255,7 +254,7 @@ if api_key:
                 st.markdown("---")
                 st.markdown(recipe_data.get("markdown_recept", "Geen recept details beschikbaar."))
 
-                # Real-Time Timer Component
+                # Real-Time Timer
                 st.markdown("---")
                 st.subheader("⏱️ Real-Time Timer met Live Gesproken Begeleiding")
                 stappen = recipe_data.get("stappen", [])
@@ -317,7 +316,7 @@ if api_key:
                             st.success("🎉 Zetsessie voltooid!")
                             st.session_state["timer_active"] = False
 
-                    # Doorlooptijd / Auto-tuner
+                    # Doorlooptijd & Auto-Tuner
                     st.markdown("---")
                     st.subheader("⏱️ Doorlooptijd & Auto-Tuner")
                     doel_min = totaal_tijd // 60
@@ -360,9 +359,9 @@ if api_key:
                         if abs(verschil) <= 10 and "Perfect" in smaak_feedback:
                             st.success("🎯 **Goudschot!** Behoud deze instellingen.")
                         elif verschil > 10:
-                            st.warning(f"🐢 **Te traag:** Maal **0.2-0.4 GROVER** op Ode Gen 2 of **1-2 kliks GROVER** op Comandante C40.")
+                            st.warning("🐢 **Te traag:** Maal **0.2-0.4 GROVER** op Ode Gen 2 of **1-2 kliks GROVER** op Comandante C40.")
                         else:
-                            st.warning(f"🐇 **Te snel:** Maal **0.2-0.4 FIJNER** op Ode Gen 2 of **1-2 kliks FIJNER** op Comandante C40.")
+                            st.warning("🐇 **Te snel:** Maal **0.2-0.4 FIJNER** op Ode Gen 2 of **1-2 kliks FIJNER** op Comandante C40.")
 
             except Exception as e:
                 st.error(f"Fout bij het verwerken van de gegevens: {e}")
@@ -371,27 +370,28 @@ if api_key:
             st.error("Kon geen geldig JSON-format vinden in het antwoord van de AI.")
             st.text(raw_text)
 
-# Onderhoudsdashboard
-st.markdown("---")
-st.subheader("🧹 Koffiemolen Onderhouds Dashboard")
-col_a, col_b = st.columns(2)
+    # Onderhoudsdashboard
+    st.markdown("---")
+    st.subheader("🧹 Koffiemolen Onderhouds Dashboard")
+    col_a, col_b = st.columns(2)
 
-with col_a:
-    st.markdown("### ⚙️ Fellow Ode Gen 2")
-    ode_count = maint_data.get("ode_brew_count", 0)
-    st.write(f"Zetbeurten: **{ode_count}**")
-    if st.button("Reset Ode"):
-        maint_data["ode_brew_count"] = 0
-        save_data(MAINTENANCE_FILE, maint_data)
-        st.rerun()
+    with col_a:
+        st.markdown("### ⚙️ Fellow Ode Gen 2")
+        ode_count = maint_data.get("ode_brew_count", 0)
+        st.write(f"Zetbeurten: **{ode_count}**")
+        if st.button("Reset Ode"):
+            maint_data["ode_brew_count"] = 0
+            save_data(MAINTENANCE_FILE, maint_data)
+            st.rerun()
 
-with col_b:
-    st.markdown("### 🪵 Comandante C40")
-    com_count = maint_data.get("comandante_brew_count", 0)
-    st.write(f"Zetbeurten: **{com_count}**")
-    if st.button("Reset Comandante"):
-        maint_data["comandante_brew_count"] = 0
-        save_data(MAINTENANCE_FILE, maint_data)
-        st.rerun()
+    with col_b:
+        st.markdown("### 🪵 Comandante C40")
+        com_count = maint_data.get("comandante_brew_count", 0)
+        st.write(f"Zetbeurten: **{com_count}**")
+        if st.button("Reset Comandante"):
+            maint_data["comandante_brew_count"] = 0
+            save_data(MAINTENANCE_FILE, maint_data)
+            st.rerun()
+
 else:
     st.warning("⚠️ Geen API Key gevonden. Voer deze hierboven in of stel 'GEMINI_API_KEY' in bij Streamlit Secrets.")
